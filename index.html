@@ -1,20 +1,276 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Linker</title>
-  <link rel="stylesheet" href="style.css">
-  
-  <!-- Supabase JS Client library -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Linker</title>
+<style>
+:root{--bg:#0b0b0d;--panel:#141416;--panel2:#19191c;--line:#2a2a2e;--line2:#343438;--text:#f7f7f4;--muted:#909097;--soft:#c8c8cc;--accent:#f0eee7;--ink:#111;--danger:#ff7777;--ok:#91e2a4;--shadow:0 18px 55px rgba(0,0,0,.20);--radius:18px}
+body.light{--bg:#f4f4f1;--panel:#fff;--panel2:#f7f7f5;--line:#e4e4df;--line2:#d7d7d1;--text:#161616;--muted:#777773;--soft:#555550;--accent:#181818;--ink:#fff;--danger:#c94545;--ok:#398d50;--shadow:0 18px 50px rgba(30,30,20,.08)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:14px Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}button,input,textarea{font:inherit}button{cursor:pointer}input,textarea{outline:0}
+.app{min-height:100vh;display:grid;grid-template-columns:76px 245px minmax(0,1fr)}.rail{border-right:1px solid var(--line);background:#0f0f10;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:10px}.logo{width:46px;height:46px;border:1px solid #303033;border-radius:14px;background:#eceae2;display:grid;place-items:center;margin-bottom:13px;overflow:hidden}.logo img{width:42px;height:42px;object-fit:contain;filter:invert(1);}.railbtn{width:45px;height:45px;border:1px solid transparent;border-radius:13px;background:transparent;color:#777;font-size:19px}.railbtn:hover,.railbtn.active{background:#1d1d1f;border-color:#303034;color:#fff}.railbottom{margin-top:auto}
+.side{border-right:1px solid var(--line);background:#111112;padding:26px 16px}.brand{display:flex;align-items:center;gap:9px;margin:0 8px 24px;font-size:21px;font-weight:850;letter-spacing:-.8px}.brand img{width:25px;height:25px;object-fit:contain;filter:invert(1)}.me{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);background:var(--panel);border-radius:13px;margin-bottom:25px}.avatar{width:38px;height:38px;border-radius:50%;background:#29292b;display:grid;place-items:center;overflow:hidden;font-weight:800;flex:none}.avatar img{width:100%;height:100%;object-fit:cover}.avatar.big{width:82px;height:82px;font-size:22px;border:4px solid var(--panel)}.avatar.sm{width:32px;height:32px;font-size:10px}.name{font-weight:720}.handle{font-size:12px;color:var(--muted);margin-top:2px}.navtitle{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1.2px;margin:23px 9px 7px}.nav{width:100%;padding:10px 11px;border:0;border-radius:9px;background:transparent;color:#999;text-align:left;margin:2px 0}.nav:hover,.nav.active{background:#1d1d1e;color:#fff}.count{float:right;background:#29292b;border-radius:20px;padding:2px 7px;color:#bbb;font-size:10px}
+.main{max-width:1120px;width:100%;padding:30px 34px 70px;overflow:auto}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:25px}.top h1{font-size:27px;letter-spacing:-.8px;margin:0}.top p{margin:5px 0 0;color:var(--muted)}.logout,.ghost{border:1px solid var(--line);background:#171718;color:#ccc;border-radius:9px;padding:9px 13px}.primary{border:0;background:var(--accent);color:#111;border-radius:9px;padding:10px 14px;font-weight:760}.danger{border:1px solid #4b2929;background:#211516;color:#ff9a9a;border-radius:9px;padding:9px 12px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}.panel h2{font-size:16px;margin:0}.panelhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.muted{color:var(--muted)}.empty{text-align:center;color:#666;padding:25px 5px}.search{display:flex;gap:9px}.search input,.chatinput,.commentinput{flex:1;background:#101011;border:1px solid #333;color:#eee;border-radius:10px;padding:11px 12px}.error{color:var(--danger);margin-top:10px}.ok{color:var(--ok);margin-top:10px}
+.stories{display:flex;gap:16px;overflow:auto}.story{min-width:66px;text-align:center}.story .avatar{margin:auto;border:1px solid #444}.story span{display:block;color:#aaa;font-size:11px;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.composer textarea{width:100%;min-height:80px;resize:vertical;background:#101011;border:1px solid #333;color:#eee;border-radius:11px;padding:12px}.composerfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}
+.posthead{display:flex;align-items:center;gap:10px}.posttext{line-height:1.58;color:#ddd;margin:15px 0;white-space:normal}.postactions{display:flex;gap:5px;border-top:1px solid #29292b;padding-top:9px}.action{border:0;background:transparent;color:#888;border-radius:8px;padding:7px 9px}.action:hover,.action.liked{background:#222;color:#fff}.postmenu{margin-left:auto;display:flex;gap:3px}.comment{background:#1c1c1e;border-radius:10px;padding:9px 11px;margin-top:8px}.comment b{margin-right:4px}.commentrow{display:flex;gap:7px;margin-top:10px}.commentinput{min-width:0}.tiny{font-size:11px;padding:6px 8px}
+.userrow,.requestrow,.friendrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid #29292b}.userleft{display:flex;align-items:center;gap:10px;min-width:0}.userleft>div:last-child{min-width:0}.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.badge{display:inline-block;background:#29292b;color:#aaa;border-radius:20px;padding:3px 7px;font-size:10px}.online{width:7px;height:7px;border-radius:50%;background:#9ee7ad;display:inline-block;margin-left:5px}
+.chatlayout{display:grid;grid-template-columns:225px minmax(0,1fr);height:610px}.chatlist{border-right:1px solid var(--line);padding-right:14px;overflow:auto}.chatitem{display:flex;align-items:center;gap:9px;padding:10px;border-radius:10px;cursor:pointer}.chatitem:hover,.chatitem.active{background:#222224}.chatarea{display:flex;flex-direction:column;padding-left:18px;min-width:0}.messages{flex:1;overflow:auto;padding:12px 3px}.bubble{max-width:72%;width:max-content;padding:10px 12px;border-radius:13px;background:#242426;margin:7px 0;line-height:1.4}.bubble.mine{margin-left:auto;background:var(--accent);color:#111}.bubbletime{font-size:9px;opacity:.55;margin-top:4px}.chatcomposer{display:flex;gap:8px;margin-top:12px}.chatcomposer input{min-width:0}
+.profilecover{height:135px;border:1px solid #333;border-radius:13px;background:linear-gradient(135deg,#28282a,#141416)}.profileinfo{display:flex;align-items:end;gap:16px;margin:-38px 20px 0;position:relative}.profilebio{margin:12px 20px;color:#aaa;line-height:1.5}.stats{display:flex;gap:28px;margin:16px 20px}.stat b{font-size:18px}.stat span{display:block;color:#777;font-size:10px;margin-top:2px}.field{margin-top:14px}.field label{display:block;font-size:11px;color:#888;margin-bottom:7px}.field input,.field textarea{width:100%;background:#101011;border:1px solid #333;color:#eee;border-radius:10px;padding:11px}.field textarea{min-height:90px;resize:vertical}.profileactions{display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap}
+.notice{background:#1d1d1f;border:1px solid #28282a;border-radius:11px;padding:11px 12px;margin-bottom:8px}.notice b{color:#eee}.notice small{display:block;color:#666;margin-top:5px}
+.auth{min-height:100vh;display:grid;place-items:center;padding:20px;background:#0b0b0c}.authcard{width:min(445px,100%);background:#151516;border:1px solid #303033;border-radius:20px;padding:31px}.authlogo{display:flex;align-items:center;gap:10px;font-size:28px;font-weight:900;letter-spacing:-1px}.authlogo img{width:34px;height:34px;object-fit:contain;filter:invert(1)}.authcard h1{font-size:23px;margin:26px 0 7px}.switch{text-align:center;color:#777;margin-top:17px}.link{color:#eee;text-decoration:underline;cursor:pointer}
+.modalback{position:fixed;inset:0;background:#0009;display:grid;place-items:center;padding:20px;z-index:10}.modal{width:min(470px,100%);background:#171718;border:1px solid #333;border-radius:16px;padding:20px}.modalhead{display:flex;justify-content:space-between;align-items:center}.close{border:0;background:transparent;color:#777;font-size:20px}.toast{position:fixed;right:22px;bottom:22px;background:#eee;color:#111;padding:11px 15px;border-radius:10px;display:none;z-index:20;box-shadow:0 15px 40px #0008}
+@media(max-width:900px){.app{grid-template-columns:64px 1fr}.side{display:none}.main{padding:22px}.grid{grid-template-columns:1fr}}
+@media(max-width:600px){.main{padding:17px 12px}.top h1{font-size:23px}.chatlayout{grid-template-columns:1fr;height:600px}.chatlist{border-right:0;border-bottom:1px solid var(--line);padding:0 0 9px;max-height:145px}.chatarea{padding:12px 0 0}.rail{padding:12px 8px}.railbtn{width:42px;height:42px}.composerfoot{align-items:flex-end;flex-direction:column}.bubble{max-width:85%}}
+</style>
+
+<style>
+*{transition:background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease}
+body.light .rail{background:#fafaf8}
+body.light .side{background:#f8f8f6}
+body.light .logo{background:#171717;border-color:#171717}
+body.light .logo img,body.light .brand img,body.light .authlogo img{filter:none}
+body.light .railbtn{color:#9a9a95}
+body.light .railbtn:hover,body.light .railbtn.active{background:#ecece8;border-color:#deded8;color:#161616}
+body.light .nav{color:#777772}
+body.light .nav:hover,body.light .nav.active{background:#ecece8;color:#171717}
+body.light .me,.light .panel{box-shadow:0 8px 28px rgba(30,30,20,.035)}
+body.light .avatar{background:#e9e9e4;color:#222}
+body.light input,body.light textarea,.light .chatinput,.light .commentinput{background:#fafaf8;color:#171717;border-color:#deded8}
+body.light .ghost,.light .logout{background:#fff;color:#333;border-color:#dcdcd6}
+body.light .action{color:#777}
+body.light .action:hover,body.light .action.liked{background:#eeeeea;color:#111}
+body.light .bubble{background:#eeeeea;color:#191919}
+body.light .bubble.mine{background:#191919;color:#fff}
+body.light .notice{background:#f2f2ef;border-color:#e3e3dd}
+body.light .profilecover{background:linear-gradient(135deg,#e5e4df,#f5f5f1)}
+body.light .modalback{background:rgba(20,20,15,.35)}
+.themeToggle{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);cursor:pointer;margin-top:8px}
+.themeDot{width:25px;height:25px;border-radius:8px;display:grid;place-items:center;background:var(--panel2);font-size:13px}
+.hero{border-radius:var(--radius);padding:24px;margin-bottom:16px;background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;width:220px;height:220px;border:1px solid var(--line);border-radius:50%;right:-90px;top:-120px;opacity:.45}
+.hero h2{font-size:24px;letter-spacing:-.7px;margin:0 0 6px}.hero p{color:var(--muted);margin:0;max-width:650px;line-height:1.55}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}.kpi{padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(127,127,127,.04)}.kpi b{font-size:19px}.kpi span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+.panel:hover{box-shadow:var(--shadow)}
+.primary:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(0,0,0,.12)}
+.ghost:hover,.logout:hover{transform:translateY(-1px)}
+.avatar{box-shadow:inset 0 0 0 1px rgba(127,127,127,.13)}
+.search input:focus,.field input:focus,.field textarea:focus,.composer textarea:focus,.chatinput:focus,.commentinput:focus{border-color:var(--line2);box-shadow:0 0 0 3px rgba(127,127,127,.08)}
+@media(max-width:600px){.kpis{grid-template-columns:1fr 1fr 1fr}.hero{padding:18px}.hero h2{font-size:21px}}
+</style>
 </head>
 <body>
+<div id="root"></div><div id="toast" class="toast"></div>
+<script>
+const KEY="linker_local_v3",SESSION="linker_session_v3";
+const id=()=>crypto.randomUUID();
+const now=()=>Date.now();
+const emptyDB=()=>({users:[],requests:[],friends:[],posts:[],likes:[],comments:[],messages:[],notifications:[]});
+function db(){try{return JSON.parse(localStorage.getItem(KEY))||emptyDB()}catch{return emptyDB()}}
+function save(d){localStorage.setItem(KEY,JSON.stringify(d))}
+function current(){let d=db();return d.users.find(x=>x.id===localStorage.getItem(SESSION))}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function ini(s){return (s||"?").trim().slice(0,2).toUpperCase()}
+function avatar(u,cls=""){return `<div class="avatar ${cls}">${u?.avatar?`<img src="${u.avatar}" alt="">`:ini(u?.name)}</div>`}
+function toast(t){let e=document.getElementById("toast");e.textContent=t;e.style.display="block";clearTimeout(window._toast);window._toast=setTimeout(()=>e.style.display="none",1900)}
+function isFriend(a,b){return db().friends.some(f=>(f.a===a&&f.b===b)||(f.a===b&&f.b===a))}
+function pending(a,b){return db().requests.some(r=>r.status==="pending"&&r.from===a&&r.to===b)}
+function friendIds(u){return db().friends.map(f=>f.a===u.id?f.b:f.b===u.id?f.a:null).filter(Boolean)}
+function user(id){return db().users.find(x=>x.id===id)}
+function fmt(t){return new Date(t).toLocaleString("ru-RU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}
+let page="home",chatId=null;window.postImageData="";
 
-  <div id="root"></div>
-  <div id="toast" class="toast"></div>
+function theme(){
+return localStorage.getItem("linker_theme_v5")||"dark";
+}
+function applyTheme(){
+document.body.classList.toggle("light",theme()==="light");
+}
+function toggleTheme(){
+localStorage.setItem("linker_theme_v5",theme()==="light"?"dark":"light");
+applyTheme();
+render();
+}
+function themeIcon(){return theme()==="light"?"☀":"☾"}
+function themeLabel(){return theme()==="light"?"Светлая тема":"Тёмная тема"}
 
-  <!-- Главный скрипт логики -->
-  <script src="script.js"></script>
+function auth(register=false){
+root.innerHTML=`<div class="auth"><div class="authcard"><div class="authlogo">Linker</div><div class="muted">Локальная социальная сеть · просто · красиво · без сервера</div>
+<h1>${register?"Создать аккаунт":"С возвращением"}</h1><div class="muted">${register?"Создай пользователя и протестируй общение между аккаунтами.":"Войди в локальный аккаунт."}</div>
+<div class="field"><label>USERNAME</label><input id="au" autocomplete="off" placeholder="например, dimash"></div>
+${register?'<div class="field"><label>ИМЯ</label><input id="an" autocomplete="off" placeholder="Dimash"></div>':''}
+<div class="field"><label>ПАРОЛЬ</label><input id="ap" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')${register?'register()':'login()'}"></div>
+<button class="primary" style="width:100%;margin-top:20px" onclick="${register?'register()':'login()'}">${register?"Создать аккаунт":"Войти"}</button><div id="authmsg"></div>
+<div class="switch">${register?"Уже есть аккаунт?":"Нет аккаунта?"} <span class="link" onclick="auth(${!register})">${register?"Войти":"Зарегистрироваться"}</span></div></div></div>`;
+}
+function register(){
+let u=document.getElementById("au").value.trim().toLowerCase(),n=document.getElementById("an").value.trim(),p=document.getElementById("ap").value,D=db(),m=document.getElementById("authmsg");
+if(!/^[a-z0-9_.-]{3,24}$/.test(u))return m.innerHTML='<div class="error">Username: 3–24 символа, только латиница, цифры, _, ., -.</div>';
+if(n.length<2||p.length<4)return m.innerHTML='<div class="error">Имя — минимум 2 символа, пароль — минимум 4.</div>';
+if(D.users.some(x=>x.username===u))return m.innerHTML='<div class="error">Этот username уже занят.</div>';
+let x={id:id(),username:u,name:n,password:p,bio:"Привет! Я в Linker.",avatar:"",createdAt:now(),lastSeen:now()};D.users.push(x);save(D);localStorage.setItem(SESSION,x.id);render();
+}
+function login(){
+let u=document.getElementById("au").value.trim().toLowerCase(),p=document.getElementById("ap").value,D=db(),m=document.getElementById("authmsg"),x=D.users.find(x=>x.username===u&&x.password===p);
+if(!x)return m.innerHTML='<div class="error">Неверный username или пароль.</div>';x.lastSeen=now();save(D);localStorage.setItem(SESSION,x.id);render();
+}
+function logout(){localStorage.removeItem(SESSION);auth()}
+function go(p){page=p;render()}
+function online(u){return u&&now()-u.lastSeen<120000}
+
+function render(){
+let u=current();if(!u)return auth();let D=db();u.lastSeen=now();save(D);
+let fids=friendIds(u),incoming=D.requests.filter(r=>r.to===u.id&&r.status==="pending").length,unread=D.notifications.filter(n=>n.to===u.id&&!n.read).length;
+root.innerHTML=`<div class="app"><aside class="rail"><div class="logo">L</div>
+<button class="railbtn ${page==="home"?"active":""}" onclick="go('home')" title="Главная">⌂</button>
+<button class="railbtn ${page==="friends"?"active":""}" onclick="go('friends')" title="Друзья">♧</button>
+<button class="railbtn ${page==="messages"?"active":""}" onclick="go('messages')" title="Сообщения">◫</button>
+<button class="railbtn ${page==="notifications"?"active":""}" onclick="go('notifications')" title="Уведомления">♢</button>
+<div class="railbottom"><button class="railbtn ${page==="profile"?"active":""}" onclick="go('profile')" title="Профиль">●</button><button class="railbtn" onclick="toggleTheme()" title="Сменить тему">${themeIcon()}</button><button class="railbtn" onclick="go('settings')" title="Настройки">⚙</button></div></aside>
+<aside class="side"><div class="brand">Linker</div><div class="me">${avatar(u)}<div><div class="name">${esc(u.name)}</div><div class="handle">@${esc(u.username)}</div></div></div>
+<div class="navtitle">Workspace</div><button class="nav ${page==="home"?"active":""}" onclick="go('home')">⌂ Главная</button>
+<button class="nav ${page==="friends"?"active":""}" onclick="go('friends')">♧ Друзья <span class="count">${fids.length}</span></button>
+<button class="nav ${page==="messages"?"active":""}" onclick="go('messages')">◫ Сообщения</button>
+<button class="nav ${page==="notifications"?"active":""}" onclick="go('notifications')">♢ Уведомления ${unread?`<span class="count">${unread}</span>`:""}</button>
+<div class="navtitle">Account</div><button class="nav ${page==="profile"?"active":""}" onclick="go('profile')">● Профиль</button><button class="nav ${page==="settings"?"active":""}" onclick="go('settings')">⚙ Настройки</button><button class="themeToggle" onclick="toggleTheme()"><span class="themeDot">${themeIcon()}</span><span>${themeLabel()}</span></button></aside>
+<main class="main">${content(D,u,fids,incoming,unread)}</main></div>`;
+}
+function header(t,s,button=""){return `<div class="top"><div><h1>${t}</h1><p>${s}</p></div>${button}</div>`}
+function content(D,u,fids,incoming,unread){
+if(page==="friends")return header("Друзья","Поиск, запросы и список друзей.")+friendsPage(D,u,fids,incoming);
+if(page==="messages")return header("Сообщения","Личные чаты между друзьями.")+messagesPage(D,u,fids);
+if(page==="notifications")return header("Уведомления","Все события твоего аккаунта.",`<button class="ghost" onclick="readAll()">Прочитать всё</button>`)+notificationsPage(D,u);
+if(page==="profile")return header("Профиль","Твоя публичная страница.")+profilePage(D,u,fids);
+if(page==="settings")return header("Настройки","Локальные настройки и данные.")+settingsPage();
+return header("Главная","Твоя локальная социальная лента.",`<button class="logout" onclick="logout()">Выйти</button>`)+homePage(D,u,fids);
+}
+function homePage(D,u,fids){
+let posts=D.posts.slice().sort((a,b)=>b.createdAt-a.createdAt),people=D.users.filter(x=>x.id!==u.id).slice(0,6);
+return `<div class="hero"><h2>Добро пожаловать в Linker, ${esc(u.name.split(" ")[0])}.</h2><p>Общайся с друзьями, публикуй фотографии и находи новых людей — всё прямо в этом локальном прототипе.</p><div class="kpis"><div class="kpi"><b>${D.posts.length}</b><span>Постов</span></div><div class="kpi"><b>${fids.length}</b><span>Друзей</span></div><div class="kpi"><b>${D.users.length}</b><span>Аккаунтов</span></div></div></div><div class="grid"><section><div class="panel"><div class="panelhead"><h2>Stories</h2><span class="muted">Локально</span></div><div class="stories"><div class="story"><div class="avatar">+</div><span>Добавить</span></div>${people.map(x=>`<div class="story">${avatar(x)}<span>${esc(x.name)}</span></div>`).join("")}</div></div>
+<div class="panel composer"><div class="panelhead"><h2>Что нового?</h2></div>
+<textarea id="postText" placeholder="Напиши пост..."></textarea>
+<div style="display:flex;align-items:center;gap:9px;margin-top:10px;flex-wrap:wrap">
+<label class="ghost" style="cursor:pointer;display:inline-flex;align-items:center;gap:7px">📷 Добавить фото
+<input id="postImage" type="file" accept="image/*" style="display:none" onchange="previewPostImage(event)">
+</label>
+<button class="ghost tiny" id="removePostImage" style="display:none" onclick="removePostImage()">Убрать фото</button>
+</div>
+<div id="postPreview" style="display:none;margin-top:12px;position:relative">
+<img id="postPreviewImg" style="display:block;width:100%;max-height:420px;object-fit:cover;border-radius:12px;border:1px solid #333" alt="Предпросмотр">
+</div>
+<div class="composerfoot"><span class="muted">Можно опубликовать текст, фото или оба сразу.</span><button class="primary" onclick="createPost()">Опубликовать</button></div></div>
+${posts.length?posts.map(p=>postHTML(D,u,p)).join(""):'<div class="panel empty">Лента пустая. Создай первый пост.</div>'}</section>
+<aside><div class="panel"><div class="panelhead"><h2>People</h2><span class="muted">${D.users.length}</span></div>${people.map(x=>personRow(D,u,x,fids)).join("")||'<div class="empty">Пока никого нет.</div>'}</div>
+<div class="panel"><h2>Быстрый тест</h2><p class="muted" style="line-height:1.6">Создай два аккаунта → отправь запрос → прими его → открой «Сообщения». Теперь можно переписываться.</p></div></aside></div>`;
+}
+function personRow(D,u,x,fids){
+let relation=isFriend(u.id,x.id), sent=pending(u.id,x.id), received=pending(x.id,u.id);
+let act=relation?`<button class="ghost tiny" onclick="openChat('${x.id}')">Чат</button>`:sent?'<span class="badge">Отправлен</span>':received?'<span class="badge">Ждёт тебя</span>':`<button class="ghost tiny" onclick="sendReq('${x.id}')">Добавить</button>`;
+return `<div class="userrow"><div class="userleft">${avatar(x,"sm")}<div><div class="name">${esc(x.name)} ${online(x)?'<span class="online"></span>':''}</div><div class="handle">@${esc(x.username)}</div></div></div>${act}</div>`;
+}
+function postHTML(D,u,p){
+let a=user(p.userId),liked=D.likes.some(x=>x.postId===p.id&&x.userId===u.id),lc=D.likes.filter(x=>x.postId===p.id).length,cs=D.comments.filter(x=>x.postId===p.id).sort((a,b)=>a.createdAt-b.createdAt);
+return `<article class="panel"><div class="posthead">${avatar(a)}<div><div class="name">${esc(a?.name)}</div><div class="handle">@${esc(a?.username)} · ${fmt(p.createdAt)}</div></div><div class="postmenu">${p.userId===u.id?`<button class="action tiny" onclick="editPost('${p.id}')">Изменить</button><button class="action tiny" onclick="deletePost('${p.id}')">Удалить</button>`:""}</div></div>
+${p.image?`<img src="${p.image}" alt="Фото в посте" style="display:block;width:100%;max-height:520px;object-fit:cover;border-radius:12px;border:1px solid #303033;margin:14px 0">`:""}<div class="posttext">${esc(p.text).replace(/\n/g,"<br>")}</div><div class="postactions"><button class="action ${liked?"liked":""}" onclick="likePost('${p.id}')">♡ ${lc}</button><button class="action" onclick="focusComment('${p.id}')">◌ ${cs.length}</button></div>
+${cs.map(c=>{let x=user(c.userId);return `<div class="comment"><b>${esc(x?.name)}</b>${esc(c.text)}${c.userId===u.id?` <button class="action tiny" onclick="deleteComment('${c.id}')">Удалить</button>`:""}</div>`}).join("")}
+<div class="commentrow"><input class="commentinput" id="comment-${p.id}" placeholder="Комментарий..." onkeydown="if(event.key==='Enter')comment('${p.id}')"><button class="ghost tiny" onclick="comment('${p.id}')">Отправить</button></div></article>`;
+}
+function previewPostImage(ev){
+let file=ev.target.files[0];
+if(!file)return;
+if(!file.type.startsWith("image/"))return toast("Выбери изображение");
+if(file.size>4*1024*1024)return toast("Фото должно быть меньше 4 MB");
+let reader=new FileReader();
+reader.onload=()=>{
+document.getElementById("postPreviewImg").src=reader.result;
+document.getElementById("postPreview").style.display="block";
+document.getElementById("removePostImage").style.display="inline-flex";
+window.postImageData=reader.result;
+};
+reader.readAsDataURL(file);
+}
+function removePostImage(){
+window.postImageData="";
+let input=document.getElementById("postImage");
+if(input)input.value="";
+let preview=document.getElementById("postPreview");
+let remove=document.getElementById("removePostImage");
+if(preview)preview.style.display="none";
+if(remove)remove.style.display="none";
+}
+function createPost(){
+let e=document.getElementById("postText"),t=e.value.trim(),img=window.postImageData||"";
+if(!t&&!img)return toast("Добавь текст или фото");
+let D=db();
+D.posts.push({id:id(),userId:current().id,text:t,image:img,createdAt:now(),updatedAt:now()});
+save(D);
+window.postImageData="";
+toast("Пост опубликован");
+render();
+}
+function likePost(pid){let D=db(),i=D.likes.findIndex(x=>x.postId===pid&&x.userId===current().id);if(i>=0)D.likes.splice(i,1);else D.likes.push({id:id(),postId:pid,userId:current().id});save(D);render()}
+function comment(pid){let e=document.getElementById("comment-"+pid),t=e.value.trim();if(!t)return;let D=db();D.comments.push({id:id(),postId:pid,userId:current().id,text:t,createdAt:now()});save(D);render()}
+function focusComment(pid){setTimeout(()=>document.getElementById("comment-"+pid)?.focus(),30)}
+function editPost(pid){let D=db(),p=D.posts.find(x=>x.id===pid&&x.userId===current().id);if(!p)return;let t=prompt("Измени пост:",p.text);if(t===null)return;t=t.trim();if(!t)return toast("Текст не может быть пустым");p.text=t;p.updatedAt=now();save(D);render()}
+function deletePost(pid){if(!confirm("Удалить этот пост?"))return;let D=db();D.posts=D.posts.filter(x=>x.id!==pid);D.likes=D.likes.filter(x=>x.postId!==pid);D.comments=D.comments.filter(x=>x.postId!==pid);save(D);toast("Пост удалён");render()}
+function deleteComment(cid){let D=db(),c=D.comments.find(x=>x.id===cid);if(c?.userId!==current().id)return;D.comments=D.comments.filter(x=>x.id!==cid);save(D);render()}
+
+function friendsPage(D,u,fids,incoming){
+return `<div class="panel"><div class="panelhead"><h2>Найти людей</h2></div><div class="search"><input id="friendSearch" placeholder="@username или имя" oninput="searchUsers()"><button class="primary" onclick="searchUsers()">Поиск</button></div><div id="friendResults"></div></div>
+<div class="panel"><div class="panelhead"><h2>Входящие запросы</h2><span class="badge">${incoming}</span></div>${D.requests.filter(r=>r.to===u.id&&r.status==="pending").map(r=>{let x=user(r.from);return `<div class="requestrow"><div class="userleft">${avatar(x)}<div><div class="name">${esc(x.name)}</div><div class="handle">@${esc(x.username)}</div></div></div><div class="actions"><button class="primary tiny" onclick="acceptReq('${r.id}')">Принять</button><button class="ghost tiny" onclick="declineReq('${r.id}')">Отклонить</button></div></div>`}).join("")||'<div class="empty">Нет новых запросов.</div>'}</div>
+<div class="panel"><div class="panelhead"><h2>Мои друзья</h2><span class="muted">${fids.length}</span></div>${fids.map(fid=>{let x=user(fid);return `<div class="friendrow"><div class="userleft">${avatar(x)}<div><div class="name">${esc(x.name)} ${online(x)?'<span class="online"></span>':''}</div><div class="handle">@${esc(x.username)}</div></div></div><div class="actions"><button class="ghost tiny" onclick="openChat('${x.id}')">Написать</button><button class="danger tiny" onclick="removeFriend('${x.id}')">Удалить</button></div></div>`}).join("")||'<div class="empty">Пока нет друзей.</div>'}</div>`;
+}
+function searchUsers(){
+let q=(document.getElementById("friendSearch")?.value||"").trim().replace(/^@/,"").toLowerCase(),box=document.getElementById("friendResults"),D=db(),u=current();if(!q){box.innerHTML="";return}
+let arr=D.users.filter(x=>x.id!==u.id&&(x.username.includes(q)||x.name.toLowerCase().includes(q)));
+box.innerHTML=arr.length?arr.map(x=>personRow(D,u,x,friendIds(u))).join(""):'<div class="empty">Пользователь не найден.</div>';
+}
+function sendReq(to){
+let D=db(),from=current().id;if(to===from)return;
+if(isFriend(from,to))return toast("Вы уже друзья");
+if(pending(from,to))return toast("Запрос уже отправлен");
+let reverse=D.requests.find(r=>r.status==="pending"&&r.from===to&&r.to===from);if(reverse){return acceptReq(reverse.id)}
+D.requests.push({id:id(),from,to,status:"pending",createdAt:now()});D.notifications.push({id:id(),to,from,type:"request",read:false,createdAt:now()});save(D);toast("Запрос отправлен");render();
+}
+function acceptReq(rid){
+let D=db(),r=D.requests.find(x=>x.id===rid&&x.status==="pending");if(!r)return;r.status="accepted";if(!isFriend(r.from,r.to))D.friends.push({id:id(),a:r.from,b:r.to,createdAt:now()});D.notifications.push({id:id(),to:r.from,from:r.to,type:"accepted",read:false,createdAt:now()});save(D);toast("Теперь вы друзья");render();
+}
+function declineReq(rid){let D=db(),r=D.requests.find(x=>x.id===rid);if(r)r.status="declined";save(D);toast("Запрос отклонён");render()}
+function removeFriend(fid){if(!confirm("Удалить пользователя из друзей?"))return;let D=db(),u=current();D.friends=D.friends.filter(f=>!((f.a===u.id&&f.b===fid)||(f.a===fid&&f.b===u.id)));save(D);toast("Удалено из друзей");render()}
+function openChat(fid){chatId=fid;page="messages";render()}
+
+function messagesPage(D,u,fids){
+let friends=fids.map(user).filter(Boolean);if(!friends.length)return `<div class="panel empty">Здесь появятся чаты.<br><br>Сначала добавь кого-нибудь в друзья.</div>`;
+if(!chatId||!friends.some(x=>x.id===chatId))chatId=friends[0].id;let target=user(chatId),msgs=D.messages.filter(m=>(m.from===u.id&&m.to===target.id)||(m.from===target.id&&m.to===u.id)).sort((a,b)=>a.createdAt-b.createdAt);
+return `<div class="panel chatlayout"><div class="chatlist">${friends.map(x=>`<div class="chatitem ${x.id===target.id?"active":""}" onclick="openChat('${x.id}')">${avatar(x,"sm")}<div><div class="name">${esc(x.name)} ${online(x)?'<span class="online"></span>':''}</div><div class="handle">@${esc(x.username)}</div></div></div>`).join("")}</div>
+<div class="chatarea"><div class="posthead">${avatar(target,"sm")}<div><div class="name">${esc(target.name)}</div><div class="handle">Личный чат</div></div></div><div class="messages" id="messages">${msgs.length?msgs.map(m=>`<div class="bubble ${m.from===u.id?"mine":""}">${esc(m.text)}<div class="bubbletime">${fmt(m.createdAt)}</div></div>`).join(""):'<div class="empty">Начни разговор.</div>'}</div><div class="chatcomposer"><input class="chatinput" id="chatInput" placeholder="Написать сообщение..." onkeydown="if(event.key==='Enter')sendMsg('${target.id}')"><button class="primary" onclick="sendMsg('${target.id}')">Отправить</button></div></div></div>`;
+}
+function sendMsg(to){let e=document.getElementById("chatInput"),t=e.value.trim();if(!t)return;let D=db();D.messages.push({id:id(),from:current().id,to,text:t,createdAt:now()});D.notifications.push({id:id(),to,from:current().id,type:"message",read:false,createdAt:now()});save(D);render();setTimeout(()=>{let x=document.getElementById("messages");if(x)x.scrollTop=x.scrollHeight},20)}
+
+function notificationsPage(D,u){
+let ns=D.notifications.filter(n=>n.to===u.id).sort((a,b)=>b.createdAt-a.createdAt);
+return `<div class="panel">${ns.length?ns.map(n=>{let x=user(n.from),text=n.type==="request"?`<b>${esc(x?.name)}</b> отправил(а) запрос в друзья.`:n.type==="accepted"?`<b>${esc(x?.name)}</b> принял(а) твой запрос.`:`Новое сообщение от <b>${esc(x?.name)}</b>.`;return `<div class="notice">${text}<small>${fmt(n.createdAt)}</small></div>`}).join(""):'<div class="empty">Уведомлений нет.</div>'}</div>`;
+}
+function readAll(){let D=db();D.notifications.filter(n=>n.to===current().id).forEach(n=>n.read=true);save(D);toast("Уведомления прочитаны");render()}
+
+function profilePage(D,u,fids){
+let posts=D.posts.filter(p=>p.userId===u.id).length;
+return `<div class="panel"><div class="profilecover"></div><div class="profileinfo">${avatar(u,"big")}<div><h2 style="margin:0">${esc(u.name)}</h2><div class="handle">@${esc(u.username)} ${online(u)?'<span class="online"></span>':''}</div></div></div><div class="profilebio">${esc(u.bio)}</div><div class="stats"><div class="stat"><b>${posts}</b><span>ПОСТОВ</span></div><div class="stat"><b>${fids.length}</b><span>ДРУЗЕЙ</span></div></div></div>
+<div class="panel"><div class="panelhead"><h2>Редактировать профиль</h2></div><div class="field"><label>ИМЯ</label><input id="pname" value="${esc(u.name)}"></div><div class="field"><label>ОПИСАНИЕ</label><textarea id="pbio">${esc(u.bio)}</textarea></div><div class="profileactions"><button class="primary" onclick="saveProfile()">Сохранить</button><label class="ghost" style="cursor:pointer">Изменить фото <input id="avatarFile" type="file" accept="image/*" style="display:none" onchange="saveAvatar(event)"></label></div></div>`;
+}
+function saveProfile(){let D=db(),u=current();u.name=document.getElementById("pname").value.trim()||u.name;u.bio=document.getElementById("pbio").value.trim();save(D);toast("Профиль сохранён");render()}
+function saveAvatar(ev){let file=ev.target.files[0];if(!file)return;if(file.size>1.5*1024*1024)return toast("Фото должно быть меньше 1.5 MB");let r=new FileReader();r.onload=()=>{let D=db(),u=current();u.avatar=r.result;save(D);toast("Фото обновлено");render()};r.readAsDataURL(file)}
+
+function settingsPage(){
+return `<div class="panel"><div class="panelhead"><h2>Внешний вид</h2><span class="badge">${theme()==="light"?"Светлая":"Тёмная"}</span></div><p class="muted">Выбери тему интерфейса. Настройка сохраняется в этом браузере.</p><button class="themeToggle" onclick="toggleTheme()" style="max-width:280px"><span class="themeDot">${themeIcon()}</span><span>Переключить на ${theme()==="light"?"тёмную":"светлую"} тему</span></button></div>
+<div class="panel"><div class="panelhead"><h2>Локальные данные</h2></div><p class="muted" style="line-height:1.6">Все аккаунты, посты, фотографии, друзья, сообщения и уведомления находятся в localStorage этого браузера. Никакой сервер не используется.</p><button class="danger" onclick="resetData()">Удалить все локальные данные</button></div>
+<div class="panel"><div class="panelhead"><h2>О Linker</h2><span class="badge">v5</span></div><p class="muted">Полностью локальный прототип без Node.js и сторонних библиотек. Интерфейс адаптируется под компьютер и телефон.</p><div class="notice">Совет: для проверки двух аккаунтов создай A → выйди → создай B → войди обратно в A → отправь запрос → войди в B → прими → открой сообщения.</div></div>`;
+}
+function resetData(){if(!confirm("Удалить ВСЕ аккаунты и данные Linker в этом браузере?"))return;localStorage.removeItem(KEY);localStorage.removeItem(SESSION);page="home";auth()}
+
+applyTheme();
+render();
+</script>
 </body>
 </html>
