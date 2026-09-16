@@ -71,6 +71,8 @@ const SUPABASE_KEY = 'sb_publishable_oqqrzm-eAQutmx-azfti5Q_50sBwxcW';          
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const SESSION = "linker_session_v3";
+const now = () => Date.now();
+const id = () => crypto.randomUUID();
 
 let localCache = {
   users: [],
