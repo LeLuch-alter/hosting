@@ -1,8 +1,9 @@
-// --- ИНИЦИАЛИЗАЦИЯ SUPABASE ---
+// --- ИНИЦИАЛИЗАЦИЯ SUPABASE (ИСПРАВЛЕННАЯ) ---
 const SUPABASE_URL = 'https://zuljkcwhonygbrnkpsld.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_oqqrzm-eAQutmx-azfti5Q_50sBwxcW';
-const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Используем window.supabase, чтобы избежать ошибки "supabasejs is not defined"
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ СОСТОЯНИЯ ---
 let currentUser = null;
 let currentProfile = null;
