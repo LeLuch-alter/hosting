@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Linker</title>
+<!-- ДОБАВИТЬ ЭТУ СТРОКУ ПОД <title>Linker</title> -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#0b0b0d;--panel:#141416;--panel2:#19191c;--line:#2a2a2e;--line2:#343438;--text:#f7f7f4;--muted:#909097;--soft:#c8c8cc;--accent:#f0eee7;--ink:#111;--danger:#ff7777;--ok:#91e2a4;--shadow:0 18px 55px rgba(0,0,0,.20);--radius:18px}
 body.light{--bg:#f4f4f1;--panel:#fff;--panel2:#f7f7f5;--line:#e4e4df;--line2:#d7d7d1;--text:#161616;--muted:#777773;--soft:#555550;--accent:#181818;--ink:#fff;--danger:#c94545;--ok:#398d50;--shadow:0 18px 50px rgba(30,30,20,.08)}
@@ -63,12 +65,53 @@ body.light .modalback{background:rgba(20,20,15,.35)}
 <body>
 <div id="root"></div><div id="toast" class="toast"></div>
 <script>
-const KEY="linker_local_v3",SESSION="linker_session_v3";
-const id=()=>crypto.randomUUID();
-const now=()=>Date.now();
-const emptyDB=()=>({users:[],requests:[],friends:[],posts:[],likes:[],comments:[],messages:[],notifications:[]});
-function db(){try{return JSON.parse(localStorage.getItem(KEY))||emptyDB()}catch{return emptyDB()}}
-function save(d){localStorage.setItem(KEY,JSON.stringify(d))}
+// ВСТАВЬТЕ ВМЕСТО НИХ:
+const SUPABASE_URL = 'https://ваш-проект.supabase.co'; // Ваш Project URL из Supabase
+const SUPABASE_KEY = 'ваш-anon-key';                   // Ваш anon key из Supabase
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SESSION = "linker_session_v3";
+
+let localCache = {
+  users: [],
+  requests: [],
+  friends: [],
+  posts: [],
+  likes: [],
+  comments: [],
+  messages: [],
+  notifications: []
+};
+
+function db() {
+  return localCache;
+}
+
+// Загрузка всех данных из базы Supabase в локальный кэш
+async function fetchAllData() {
+  const [u, r, f, p, l, c, m, n] = await Promise.all([
+    supabaseClient.from('users').select('*'),
+    supabaseClient.from('requests').select('*'),
+    supabaseClient.from('friends').select('*'),
+    supabaseClient.from('posts').select('*'),
+    supabaseClient.from('likes').select('*'),
+    supabaseClient.from('comments').select('*'),
+    supabaseClient.from('messages').select('*'),
+    supabaseClient.from('notifications').select('*')
+  ]);
+
+  localCache = {
+    users: u.data || [],
+    requests: r.data || [],
+    friends: f.data || [],
+    posts: p.data || [],
+    likes: l.data || [],
+    comments: c.data || [],
+    messages: m.data || [],
+    notifications: n.data || []
+  };
+}
+
 function current(){let d=db();return d.users.find(x=>x.id===localStorage.getItem(SESSION))}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function ini(s){return (s||"?").trim().slice(0,2).toUpperCase()}
@@ -104,23 +147,37 @@ ${register?'<div class="field"><label>ИМЯ</label><input id="an" autocomplete=
 <button class="primary" style="width:100%;margin-top:20px" onclick="${register?'register()':'login()'}">${register?"Создать аккаунт":"Войти"}</button><div id="authmsg"></div>
 <div class="switch">${register?"Уже есть аккаунт?":"Нет аккаунта?"} <span class="link" onclick="auth(${!register})">${register?"Войти":"Зарегистрироваться"}</span></div></div></div>`;
 }
-function register(){
-let u=document.getElementById("au").value.trim().toLowerCase(),n=document.getElementById("an").value.trim(),p=document.getElementById("ap").value,D=db(),m=document.getElementById("authmsg");
-if(!/^[a-z0-9_.-]{3,24}$/.test(u))return m.innerHTML='<div class="error">Username: 3–24 символа, только латиница, цифры, _, ., -.</div>';
-if(n.length<2||p.length<4)return m.innerHTML='<div class="error">Имя — минимум 2 символа, пароль — минимум 4.</div>';
-if(D.users.some(x=>x.username===u))return m.innerHTML='<div class="error">Этот username уже занят.</div>';
-let x={id:id(),username:u,name:n,password:p,bio:"Привет! Я в Linker.",avatar:"",createdAt:now(),lastSeen:now()};D.users.push(x);save(D);localStorage.setItem(SESSION,x.id);render();
+async function register(){
+  let u=document.getElementById("au").value.trim().toLowerCase(),n=document.getElementById("an").value.trim(),p=document.getElementById("ap").value,m=document.getElementById("authmsg");
+  if(!/^[a-z0-9_.-]{3,24}$/.test(u))return m.innerHTML='<div class="error">Username: 3–24 символа, только латиница, цифры, _, ., -.</div>';
+  if(n.length<2||p.length<4)return m.innerHTML='<div class="error">Имя — минимум 2 символа, пароль — минимум 4.</div>';
+  
+  let { data: existing } = await supabaseClient.from('users').select('*').eq('username', u).single();
+  if(existing) return m.innerHTML='<div class="error">Этот username уже занят.</div>';
+  
+  let { data, error } = await supabaseClient.from('users').insert([{ username: u, name: n, password: p, bio: "Привет! Я в Linker.", avatar: "" }]).select().single();
+  if(error) return m.innerHTML=`<div class="error">${error.message}</div>`;
+
+  localStorage.setItem(SESSION, data.id);
+  await render();
 }
-function login(){
-let u=document.getElementById("au").value.trim().toLowerCase(),p=document.getElementById("ap").value,D=db(),m=document.getElementById("authmsg"),x=D.users.find(x=>x.username===u&&x.password===p);
-if(!x)return m.innerHTML='<div class="error">Неверный username или пароль.</div>';x.lastSeen=now();save(D);localStorage.setItem(SESSION,x.id);render();
+
+async function login(){
+  let u=document.getElementById("au").value.trim().toLowerCase(),p=document.getElementById("ap").value,m=document.getElementById("authmsg");
+  let { data, error } = await supabaseClient.from('users').select('*').eq('username', u).eq('password', p).single();
+  if(error || !data) return m.innerHTML='<div class="error">Неверный username или пароль.</div>';
+  
+  localStorage.setItem(SESSION, data.id);
+  await render();
 }
 function logout(){localStorage.removeItem(SESSION);auth()}
 function go(p){page=p;render()}
 function online(u){return u&&now()-u.lastSeen<120000}
 
-function render(){
-let u=current();if(!u)return auth();let D=db();u.lastSeen=now();save(D);
+async function render(){
+  await fetchAllData();
+  let u=current();if(!u)return auth();let D=db();
+  
 let fids=friendIds(u),incoming=D.requests.filter(r=>r.to===u.id&&r.status==="pending").length,unread=D.notifications.filter(n=>n.to===u.id&&!n.read).length;
 root.innerHTML=`<div class="app"><aside class="rail"><div class="logo">L</div>
 <button class="railbtn ${page==="home"?"active":""}" onclick="go('home')" title="Главная">⌂</button>
@@ -199,15 +256,16 @@ let remove=document.getElementById("removePostImage");
 if(preview)preview.style.display="none";
 if(remove)remove.style.display="none";
 }
-function createPost(){
-let e=document.getElementById("postText"),t=e.value.trim(),img=window.postImageData||"";
-if(!t&&!img)return toast("Добавь текст или фото");
-let D=db();
-D.posts.push({id:id(),userId:current().id,text:t,image:img,createdAt:now(),updatedAt:now()});
-save(D);
-window.postImageData="";
-toast("Пост опубликован");
-render();
+async function createPost(){
+  let e=document.getElementById("postText"),t=e.value.trim(),img=window.postImageData||"";
+  if(!t&&!img)return toast("Добавь текст или фото");
+  
+  let u = current();
+  await supabaseClient.from('posts').insert([{ userId: u.id, text: t, image: img }]);
+  
+  window.postImageData="";
+  toast("Пост опубликован");
+  await render();
 }
 function likePost(pid){let D=db(),i=D.likes.findIndex(x=>x.postId===pid&&x.userId===current().id);if(i>=0)D.likes.splice(i,1);else D.likes.push({id:id(),postId:pid,userId:current().id});save(D);render()}
 function comment(pid){let e=document.getElementById("comment-"+pid),t=e.value.trim();if(!t)return;let D=db();D.comments.push({id:id(),postId:pid,userId:current().id,text:t,createdAt:now()});save(D);render()}
