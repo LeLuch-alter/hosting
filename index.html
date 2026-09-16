@@ -89,27 +89,28 @@ function db() {
 
 // Загрузка всех данных из базы Supabase в локальный кэш
 async function fetchAllData() {
-  const [u, r, f, p, l, c, m, n] = await Promise.all([
-    supabaseClient.from('users').select('*'),
-    supabaseClient.from('requests').select('*'),
-    supabaseClient.from('friends').select('*'),
-    supabaseClient.from('posts').select('*'),
-    supabaseClient.from('likes').select('*'),
-    supabaseClient.from('comments').select('*'),
-    supabaseClient.from('messages').select('*'),
-    supabaseClient.from('notifications').select('*')
+  const getTable = async (name) => {
+    try {
+      const { data, error } = await supabaseClient.from(name).select('*');
+      if (error) console.error(`Ошибка загрузки таблицы ${name}:`, error);
+      return data || [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const [users, requests, friends, posts, likes, comments, messages, notifications] = await Promise.all([
+    getTable('users'),
+    getTable('requests'),
+    getTable('friends'),
+    getTable('posts'),
+    getTable('likes'),
+    getTable('comments'),
+    getTable('messages'),
+    getTable('notifications')
   ]);
 
-  localCache = {
-    users: u.data || [],
-    requests: r.data || [],
-    friends: f.data || [],
-    posts: p.data || [],
-    likes: l.data || [],
-    comments: c.data || [],
-    messages: m.data || [],
-    notifications: n.data || []
-  };
+  localCache = { users, requests, friends, posts, likes, comments, messages, notifications };
 }
 
 function current() {
@@ -184,20 +185,38 @@ async function login(){
 
   m.innerHTML = '<div style="color:var(--sub)">Входим...</div>';
 
-  let { data, error } = await supabaseClient
-    .from('users')
-    .select('*')
-    .eq('username', u)
-    .eq('password', p)
-    .maybeSingle();
+  try {
+    // 1. Ищем пользователя напрямую
+    let { data, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('username', u)
+      .eq('password', p)
+      .maybeSingle();
 
-  if (error || !data) {
-    return m.innerHTML = '<div class="error">Неверный username или пароль.</div>';
+    if (error) {
+      console.error("Ошибка Supabase при входе:", error);
+      return m.innerHTML = `<div class="error">Ошибка базы: ${error.message}</div>`;
+    }
+
+    if (!data) {
+      return m.innerHTML = '<div class="error">Неверный username или пароль.</div>';
+    }
+
+    // 2. Сохраняем сессию
+    localStorage.setItem(SESSION, String(data.id));
+    
+    // 3. Вызываем рендер с перехватом ошибок
+    m.innerHTML = '<div style="color:var(--sub)">Загрузка данных...</div>';
+    await render();
+
+  } catch (err) {
+    console.error("Критический сбой:", err);
+    m.innerHTML = `<div class="error">Сбой: ${err.message || 'Смотри консоль (F12)'}</div>`;
   }
-
-  localStorage.setItem(SESSION, String(data.id));
-  await render();
 }
+
+
 function logout(){localStorage.removeItem(SESSION);auth()}
 function go(p){page=p;render()}
 function online(u){return u&&now()-u.lastSeen<120000}
