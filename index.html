@@ -112,7 +112,11 @@ async function fetchAllData() {
   };
 }
 
-function current(){let d=db();return d.users.find(x=>x.id===localStorage.getItem(SESSION))}
+function current() {
+  const sessId = localStorage.getItem(SESSION);
+  if (!sessId) return null;
+  return localCache.users.find(x => String(x.id) === String(sessId)) || null;
+}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function ini(s){return (s||"?").trim().slice(0,2).toUpperCase()}
 function avatar(u,cls=""){return `<div class="avatar ${cls}">${u?.avatar?`<img src="${u.avatar}" alt="">`:ini(u?.name)}</div>`}
@@ -158,7 +162,6 @@ async function register(){
 
   m.innerHTML = '<div style="color:var(--sub)">Создаем аккаунт...</div>';
 
-  // Вставляем запись напрямую: ограничение 'unique' в базе само отловит дубликат
   let { data, error } = await supabaseClient
     .from('users')
     .insert([{ username: u, name: n, password: p, bio: "Привет! Я в Linker.", avatar: "" }])
@@ -166,23 +169,33 @@ async function register(){
     .single();
 
   if (error) {
-    if (error.code === '23505') { // Код ошибки Postgres для занятого username
-      return m.innerHTML = '<div class="error">Этот username уже занят.</div>';
-    }
+    if (error.code === '23505') return m.innerHTML = '<div class="error">Этот username уже занят.</div>';
     return m.innerHTML = `<div class="error">${error.message}</div>`;
   }
 
-  // Успешный вход
-  localStorage.setItem(SESSION, data.id);
+  localStorage.setItem(SESSION, String(data.id));
   await render();
 }
 
 async function login(){
-  let u=document.getElementById("au").value.trim().toLowerCase(),p=document.getElementById("ap").value,m=document.getElementById("authmsg");
-  let { data, error } = await supabaseClient.from('users').select('*').eq('username', u).eq('password', p).single();
-  if(error || !data) return m.innerHTML='<div class="error">Неверный username или пароль.</div>';
-  
-  localStorage.setItem(SESSION, data.id);
+  let u = document.getElementById("au").value.trim().toLowerCase();
+  let p = document.getElementById("ap").value;
+  let m = document.getElementById("authmsg");
+
+  m.innerHTML = '<div style="color:var(--sub)">Входим...</div>';
+
+  let { data, error } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('username', u)
+    .eq('password', p)
+    .maybeSingle();
+
+  if (error || !data) {
+    return m.innerHTML = '<div class="error">Неверный username или пароль.</div>';
+  }
+
+  localStorage.setItem(SESSION, String(data.id));
   await render();
 }
 function logout(){localStorage.removeItem(SESSION);auth()}
