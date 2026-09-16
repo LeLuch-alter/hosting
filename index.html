@@ -306,22 +306,78 @@ if(preview)preview.style.display="none";
 if(remove)remove.style.display="none";
 }
 async function createPost(){
-  let e=document.getElementById("postText"),t=e.value.trim(),img=window.postImageData||"";
-  if(!t&&!img)return toast("Добавь текст или фото");
+  let e = document.getElementById("postText");
+  let t = e ? e.value.trim() : "";
+  let img = window.postImageData || "";
   
+  if(!t && !img) return toast("Добавь текст или фото");
   let u = current();
-  await supabaseClient.from('posts').insert([{ userId: u.id, text: t, image: img }]);
-  
-  window.postImageData="";
+  if(!u) return;
+
+  let { error } = await supabaseClient.from('posts').insert([{ userId: u.id, text: t, image: img }]);
+  if(error) return toast("Ошибка публикации: " + error.message);
+
+  window.postImageData = "";
   toast("Пост опубликован");
   await render();
 }
-function likePost(pid){let D=db(),i=D.likes.findIndex(x=>x.postId===pid&&x.userId===current().id);if(i>=0)D.likes.splice(i,1);else D.likes.push({id:id(),postId:pid,userId:current().id});save(D);render()}
-function comment(pid){let e=document.getElementById("comment-"+pid),t=e.value.trim();if(!t)return;let D=db();D.comments.push({id:id(),postId:pid,userId:current().id,text:t,createdAt:now()});save(D);render()}
-function focusComment(pid){setTimeout(()=>document.getElementById("comment-"+pid)?.focus(),30)}
-function editPost(pid){let D=db(),p=D.posts.find(x=>x.id===pid&&x.userId===current().id);if(!p)return;let t=prompt("Измени пост:",p.text);if(t===null)return;t=t.trim();if(!t)return toast("Текст не может быть пустым");p.text=t;p.updatedAt=now();save(D);render()}
-function deletePost(pid){if(!confirm("Удалить этот пост?"))return;let D=db();D.posts=D.posts.filter(x=>x.id!==pid);D.likes=D.likes.filter(x=>x.postId!==pid);D.comments=D.comments.filter(x=>x.postId!==pid);save(D);toast("Пост удалён");render()}
-function deleteComment(cid){let D=db(),c=D.comments.find(x=>x.id===cid);if(c?.userId!==current().id)return;D.comments=D.comments.filter(x=>x.id!==cid);save(D);render()}
+
+async function editPost(pid){
+  let u = current();
+  let p = db().posts.find(x => x.id === pid && x.userId === u.id);
+  if(!p) return;
+  
+  let t = prompt("Измени пост:", p.text);
+  if(t === null) return;
+  t = t.trim();
+  if(!t) return toast("Текст не может быть пустым");
+
+  await supabaseClient.from('posts').update({ text: t }).eq('id', pid);
+  await render();
+}
+
+async function deletePost(pid){
+  if(!confirm("Удалить этот пост?")) return;
+  
+  await supabaseClient.from('posts').delete().eq('id', pid);
+  await supabaseClient.from('likes').delete().eq('postId', pid);
+  await supabaseClient.from('comments').delete().eq('postId', pid);
+  
+  toast("Пост удалён");
+  await render();
+}
+async function likePost(pid){
+  let u = current();
+  if(!u) return;
+  let existing = db().likes.find(x => x.postId === pid && x.userId === u.id);
+  
+  if(existing) {
+    await supabaseClient.from('likes').delete().eq('id', existing.id);
+  } else {
+    await supabaseClient.from('likes').insert([{ postId: pid, userId: u.id }]);
+  }
+  await render();
+}
+
+async function comment(pid){
+  let e = document.getElementById("comment-" + pid);
+  let t = e ? e.value.trim() : "";
+  if(!t) return;
+  let u = current();
+  if(!u) return;
+
+  await supabaseClient.from('comments').insert([{ postId: pid, userId: u.id, text: t }]);
+  await render();
+}
+
+async function deleteComment(cid){
+  let u = current();
+  let c = db().comments.find(x => x.id === cid);
+  if(c?.userId !== u?.id) return;
+
+  await supabaseClient.from('comments').delete().eq('id', cid);
+  await render();
+}
 
 function friendsPage(D,u,fids,incoming){
 return `<div class="panel"><div class="panelhead"><h2>Найти людей</h2></div><div class="search"><input id="friendSearch" placeholder="@username или имя" oninput="searchUsers()"><button class="primary" onclick="searchUsers()">Поиск</button></div><div id="friendResults"></div></div>
@@ -333,18 +389,65 @@ let q=(document.getElementById("friendSearch")?.value||"").trim().replace(/^@/,"
 let arr=D.users.filter(x=>x.id!==u.id&&(x.username.includes(q)||x.name.toLowerCase().includes(q)));
 box.innerHTML=arr.length?arr.map(x=>personRow(D,u,x,friendIds(u))).join(""):'<div class="empty">Пользователь не найден.</div>';
 }
-function sendReq(to){
-let D=db(),from=current().id;if(to===from)return;
-if(isFriend(from,to))return toast("Вы уже друзья");
-if(pending(from,to))return toast("Запрос уже отправлен");
-let reverse=D.requests.find(r=>r.status==="pending"&&r.from===to&&r.to===from);if(reverse){return acceptReq(reverse.id)}
-D.requests.push({id:id(),from,to,status:"pending",createdAt:now()});D.notifications.push({id:id(),to,from,type:"request",read:false,createdAt:now()});save(D);toast("Запрос отправлен");render();
+async function sendReq(to){
+  let u = current();
+  if (!u) return;
+  let from = u.id;
+  if (to === from) return;
+  if (isFriend(from, to)) return toast("Вы уже друзья");
+  if (pending(from, to)) return toast("Запрос уже отправлен");
+
+  let D = db();
+  let reverse = D.requests.find(r => r.status === "pending" && r.from === to && r.to === from);
+  if (reverse) { return acceptReq(reverse.id); }
+
+  // Запись запроса в Supabase
+  let { error } = await supabaseClient.from('requests').insert([{ from, to, status: "pending" }]);
+  if (error) return toast("Ошибка отправки: " + error.message);
+
+  // Создание уведомления
+  await supabaseClient.from('notifications').insert([{ to, from, type: "request", read: false }]);
+
+  toast("Запрос отправлен");
+  await render();
 }
-function acceptReq(rid){
-let D=db(),r=D.requests.find(x=>x.id===rid&&x.status==="pending");if(!r)return;r.status="accepted";if(!isFriend(r.from,r.to))D.friends.push({id:id(),a:r.from,b:r.to,createdAt:now()});D.notifications.push({id:id(),to:r.from,from:r.to,type:"accepted",read:false,createdAt:now()});save(D);toast("Теперь вы друзья");render();
+
+async function acceptReq(rid){
+  let D = db();
+  let r = D.requests.find(x => x.id === rid && x.status === "pending");
+  if (!r) return;
+
+  // Обновляем статус запроса
+  await supabaseClient.from('requests').update({ status: "accepted" }).eq('id', rid);
+
+  // Создаем связь друзей
+  if (!isFriend(r.from, r.to)) {
+    await supabaseClient.from('friends').insert([{ a: r.from, b: r.to }]);
+  }
+
+  // Отправляем уведомление принявшему
+  await supabaseClient.from('notifications').insert([{ to: r.from, from: r.to, type: "accepted", read: false }]);
+
+  toast("Теперь вы друзья");
+  await render();
 }
-function declineReq(rid){let D=db(),r=D.requests.find(x=>x.id===rid);if(r)r.status="declined";save(D);toast("Запрос отклонён");render()}
-function removeFriend(fid){if(!confirm("Удалить пользователя из друзей?"))return;let D=db(),u=current();D.friends=D.friends.filter(f=>!((f.a===u.id&&f.b===fid)||(f.a===fid&&f.b===u.id)));save(D);toast("Удалено из друзей");render()}
+
+async function declineReq(rid){
+  await supabaseClient.from('requests').update({ status: "declined" }).eq('id', rid);
+  toast("Запрос отклонён");
+  await render();
+}
+
+async function removeFriend(fid){
+  if (!confirm("Удалить пользователя из друзей?")) return;
+  let u = current();
+  if (!u) return;
+
+  await supabaseClient.from('friends').delete().or(`and(a.eq.${u.id},b.eq.${fid}),and(a.eq.${fid},b.eq.${u.id})`);
+  
+  toast("Удалено из друзей");
+  await render();
+}
 function openChat(fid){chatId=fid;page="messages";render()}
 
 function messagesPage(D,u,fids){
@@ -353,22 +456,73 @@ if(!chatId||!friends.some(x=>x.id===chatId))chatId=friends[0].id;let target=user
 return `<div class="panel chatlayout"><div class="chatlist">${friends.map(x=>`<div class="chatitem ${x.id===target.id?"active":""}" onclick="openChat('${x.id}')">${avatar(x,"sm")}<div><div class="name">${esc(x.name)} ${online(x)?'<span class="online"></span>':''}</div><div class="handle">@${esc(x.username)}</div></div></div>`).join("")}</div>
 <div class="chatarea"><div class="posthead">${avatar(target,"sm")}<div><div class="name">${esc(target.name)}</div><div class="handle">Личный чат</div></div></div><div class="messages" id="messages">${msgs.length?msgs.map(m=>`<div class="bubble ${m.from===u.id?"mine":""}">${esc(m.text)}<div class="bubbletime">${fmt(m.createdAt)}</div></div>`).join(""):'<div class="empty">Начни разговор.</div>'}</div><div class="chatcomposer"><input class="chatinput" id="chatInput" placeholder="Написать сообщение..." onkeydown="if(event.key==='Enter')sendMsg('${target.id}')"><button class="primary" onclick="sendMsg('${target.id}')">Отправить</button></div></div></div>`;
 }
-function sendMsg(to){let e=document.getElementById("chatInput"),t=e.value.trim();if(!t)return;let D=db();D.messages.push({id:id(),from:current().id,to,text:t,createdAt:now()});D.notifications.push({id:id(),to,from:current().id,type:"message",read:false,createdAt:now()});save(D);render();setTimeout(()=>{let x=document.getElementById("messages");if(x)x.scrollTop=x.scrollHeight},20)}
+async function sendMsg(to){
+  let e = document.getElementById("chatInput");
+  let t = e ? e.value.trim() : "";
+  if(!t) return;
+  let u = current();
+  if(!u) return;
 
+  // Отправляем сообщение в базу
+  let { error } = await supabaseClient.from('messages').insert([{ from: u.id, to, text: t }]);
+  if(error) return toast("Ошибка отправки: " + error.message);
+
+  // Отправляем уведомление получателю
+  await supabaseClient.from('notifications').insert([{ to, from: u.id, type: "message", read: false }]);
+  
+  e.value = "";
+  await render();
+  
+  setTimeout(() => {
+    let x = document.getElementById("messages");
+    if(x) x.scrollTop = x.scrollHeight;
+  }, 50);
+}
 function notificationsPage(D,u){
 let ns=D.notifications.filter(n=>n.to===u.id).sort((a,b)=>b.createdAt-a.createdAt);
 return `<div class="panel">${ns.length?ns.map(n=>{let x=user(n.from),text=n.type==="request"?`<b>${esc(x?.name)}</b> отправил(а) запрос в друзья.`:n.type==="accepted"?`<b>${esc(x?.name)}</b> принял(а) твой запрос.`:`Новое сообщение от <b>${esc(x?.name)}</b>.`;return `<div class="notice">${text}<small>${fmt(n.createdAt)}</small></div>`}).join(""):'<div class="empty">Уведомлений нет.</div>'}</div>`;
 }
-function readAll(){let D=db();D.notifications.filter(n=>n.to===current().id).forEach(n=>n.read=true);save(D);toast("Уведомления прочитаны");render()}
 
 function profilePage(D,u,fids){
 let posts=D.posts.filter(p=>p.userId===u.id).length;
 return `<div class="panel"><div class="profilecover"></div><div class="profileinfo">${avatar(u,"big")}<div><h2 style="margin:0">${esc(u.name)}</h2><div class="handle">@${esc(u.username)} ${online(u)?'<span class="online"></span>':''}</div></div></div><div class="profilebio">${esc(u.bio)}</div><div class="stats"><div class="stat"><b>${posts}</b><span>ПОСТОВ</span></div><div class="stat"><b>${fids.length}</b><span>ДРУЗЕЙ</span></div></div></div>
 <div class="panel"><div class="panelhead"><h2>Редактировать профиль</h2></div><div class="field"><label>ИМЯ</label><input id="pname" value="${esc(u.name)}"></div><div class="field"><label>ОПИСАНИЕ</label><textarea id="pbio">${esc(u.bio)}</textarea></div><div class="profileactions"><button class="primary" onclick="saveProfile()">Сохранить</button><label class="ghost" style="cursor:pointer">Изменить фото <input id="avatarFile" type="file" accept="image/*" style="display:none" onchange="saveAvatar(event)"></label></div></div>`;
 }
-function saveProfile(){let D=db(),u=current();u.name=document.getElementById("pname").value.trim()||u.name;u.bio=document.getElementById("pbio").value.trim();save(D);toast("Профиль сохранён");render()}
-function saveAvatar(ev){let file=ev.target.files[0];if(!file)return;if(file.size>1.5*1024*1024)return toast("Фото должно быть меньше 1.5 MB");let r=new FileReader();r.onload=()=>{let D=db(),u=current();u.avatar=r.result;save(D);toast("Фото обновлено");render()};r.readAsDataURL(file)}
+async function saveProfile(){
+  let u = current();
+  if(!u) return;
+  
+  let name = document.getElementById("pname").value.trim() || u.name;
+  let bio = document.getElementById("pbio").value.trim();
 
+  await supabaseClient.from('users').update({ name, bio }).eq('id', u.id);
+  toast("Профиль сохранён");
+  await render();
+}
+
+async function saveAvatar(ev){
+  let file = ev.target.files[0];
+  if(!file) return;
+  if(file.size > 1.5 * 1024 * 1024) return toast("Фото должно быть меньше 1.5 MB");
+  
+  let r = new FileReader();
+  r.onload = async () => {
+    let u = current();
+    if(!u) return;
+    await supabaseClient.from('users').update({ avatar: r.result }).eq('id', u.id);
+    toast("Фото обновлено");
+    await render();
+  };
+  r.readAsDataURL(file);
+}
+
+async function readAll(){
+  let u = current();
+  if(!u) return;
+  await supabaseClient.from('notifications').update({ read: true }).eq('to', u.id);
+  toast("Уведомления прочитаны");
+  await render();
+}
 function settingsPage(){
 return `<div class="panel"><div class="panelhead"><h2>Внешний вид</h2><span class="badge">${theme()==="light"?"Светлая":"Тёмная"}</span></div><p class="muted">Выбери тему интерфейса. Настройка сохраняется в этом браузере.</p><button class="themeToggle" onclick="toggleTheme()" style="max-width:280px"><span class="themeDot">${themeIcon()}</span><span>Переключить на ${theme()==="light"?"тёмную":"светлую"} тему</span></button></div>
 <div class="panel"><div class="panelhead"><h2>Локальные данные</h2></div><p class="muted" style="line-height:1.6">Все аккаунты, посты, фотографии, друзья, сообщения и уведомления находятся в localStorage этого браузера. Никакой сервер не используется.</p><button class="danger" onclick="resetData()">Удалить все локальные данные</button></div>
