@@ -152,14 +152,21 @@ async function register(){
   if(!/^[a-z0-9_.-]{3,24}$/.test(u))return m.innerHTML='<div class="error">Username: 3–24 символа, только латиница, цифры, _, ., -.</div>';
   if(n.length<2||p.length<4)return m.innerHTML='<div class="error">Имя — минимум 2 символа, пароль — минимум 4.</div>';
   
-  let { data: existing } = await supabaseClient.from('users').select('*').eq('username', u).single();
-  if(existing) return m.innerHTML='<div class="error">Этот username уже занят.</div>';
+  // 1. Проверяем, свободен ли username
+  let { data: existing } = await supabaseClient.from('users').select('*').eq('username', u);
+  if(existing && existing.length > 0) return m.innerHTML='<div class="error">Этот username уже занят.</div>';
   
-  let { data, error } = await supabaseClient.from('users').insert([{ username: u, name: n, password: p, bio: "Привет! Я в Linker.", avatar: "" }]).select().single();
+  // 2. Вставляем нового пользователя (без метода .select() в конце)
+  let { error } = await supabaseClient.from('users').insert([{ username: u, name: n, password: p, bio: "Привет! Я в Linker.", avatar: "" }]);
   if(error) return m.innerHTML=`<div class="error">${error.message}</div>`;
 
-  localStorage.setItem(SESSION, data.id);
-  await render();
+  // 3. Получаем созданного пользователя из базы по логину
+  let { data: newUser } = await supabaseClient.from('users').select('*').eq('username', u).single();
+  
+  if(newUser) {
+    localStorage.setItem(SESSION, newUser.id);
+    await render();
+  }
 }
 
 async function login(){
